@@ -90,7 +90,7 @@ class Canvas():
         self.brushcol = brushcol
         self.thick = thickness
         self.e_thick = e_thickness
-        self.mode = 'b'													# b for brush, e for eraser, f for fill and p for colour picker
+        self.mode = 'b'								 # b for brush, e - eraser, l - line, r - rectangle, c - circel, f - fill and p - colour picker
         self.surf = pg.Surface((screenWd - pos[0], screenHt - pos[1])).convert_alpha()                    #(screenWd - pos[0]
         self.pos = pos
 ##        self.pos1 = (370, 100)
@@ -148,6 +148,9 @@ class Canvas():
             return
         elif self.mode == 'f':
             self.fill(pos, self.current_surf)
+            return
+        elif self.mode == 'l' or self.mode == 'c' or self.mode == 'r':
+            self.pressed = True
             return
         else:
             col = self.screencol
@@ -236,7 +239,8 @@ def rgb_col(screen, canvas, rgb_val, pos):
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                return
+                pg.quit()
+                exit()
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
                     return
@@ -298,7 +302,8 @@ def colchoice(screen, canvas, canvas_col_button):
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                return
+                pg.quit()
+                exit()
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
                     return
@@ -310,7 +315,6 @@ def colchoice(screen, canvas, canvas_col_button):
                 return
             button.show(surf)
         if pg.mouse.get_pressed()[0] and surfRect.collidepoint(pg.mouse.get_pos()) == False and count>10:
-            print(surfRect, rgb.rect)
             return
         if rgb.get_click():
             rgb_val = rgb_col(screen, canvas, rgb_val, (662, 375))
@@ -325,6 +329,58 @@ def colchoice(screen, canvas, canvas_col_button):
         count += 1
         clock.tick(FPS)
 
+def shape_choice(screen, canvas, surfpos = (975, 105)):
+    clock = pg.time.Clock()
+    FPS = 20
+    surf = pg.Surface((80, 200))
+    count = 0
+    surfRect = surf.get_rect()
+    surfRect [0], surfRect[1] = surfpos[0], surfpos[1]
+
+
+    line_surf = pg.Surface((40, 40))
+    line_surf.fill(gray)
+    pg.draw.line(line_surf, canvas.brushcol, (5, 5), (35, 35), 2)
+
+    rect_surf = pg.Surface((40, 40))
+    rect_surf.fill(gray)
+    pg.draw.rect(rect_surf, canvas.brushcol, (5, 10, 30, 20), 2)
+
+    circ_surf = pg.Surface((40, 40))
+    circ_surf.fill(gray)
+    pg.draw.circle(circ_surf, canvas.brushcol, (20, 20), 15, 2)
+
+
+    line_button = Button(20, 20, 40, 40, img = line_surf, value = 'l', surfpos = surfpos)
+    rect_button = Button(20, 80, 40, 40, img = rect_surf, value = 'r', surfpos = surfpos)
+    circ_button = Button(20, 140, 40, 40, img = circ_surf, value = 'c', surfpos = surfpos)
+
+    button_list = [line_button, rect_button, circ_button]
+
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                exit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    return
+
+        surf.fill(gray)
+        for button in button_list:
+            if button.get_click():
+                canvas.mode = button.value
+                return
+            button.show(surf)
+
+        if pg.mouse.get_pressed()[0] and surfRect.collidepoint(pg.mouse.get_pos()) == False and count > 20:
+            return
+
+        screen.blit(surf, surfpos)
+        pg.display.update()
+        count += 1
+        clock.tick(FPS)
+
 def brushsize(screen, canvas):
     clock = pg.time.Clock()
     FPS = 20
@@ -334,13 +390,14 @@ def brushsize(screen, canvas):
 
     dct = {pg.K_1:1, pg.K_2:2, pg.K_3:3, pg.K_4:4, pg.K_5:5, pg.K_6:6, pg.K_7:7, pg.K_8:8, pg.K_9:9, pg.K_0:0}
     text_size = Text(0, 30, 25, surfRect.size, str(canvas.thick))
-    text_instructions = Text(0, 10, 25, surfRect.size, "Type Size")
+    text_instructions = Text(0, 10, 15, surfRect.size, "Type Size in pixels")
     check = True
 
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                return
+                pg.quit()
+                exit()
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
                     return
@@ -409,6 +466,9 @@ def toolbar(screen, button_list_col, button_list_mode, button_list_misc, canvas,
         rgb_val = rgb_col(screen, canvas, rgb_val, (492, 105))
         if rgb_val != None:
             canvas.brushcol = pg.Color(rgb_val[0], rgb_val[1], rgb_val[2])
+    elif button_list_misc[5].get_click():
+        shape_choice(screen, canvas)
+        pg.time.wait(200)
 
 def mainLoop():
     screenWd, screenHt = (1120, 630)
@@ -440,6 +500,11 @@ def mainLoop():
     col_pick_pic = pg.image.load(os.path.join(os.getcwd(), "col_pick.png"))
     fill_pic = pg.image.load(os.path.join(os.getcwd(), "fill.png"))
     
+    shapes_surf = pg.Surface((50, 50))
+    shapes_surf.fill(gray)
+    pg.draw.circle(shapes_surf, black, (25, 25), 15, 2)
+    
+
     brush_butt = Button(100,25, 50, 50, img = brush, hovourImg = brush_hov, hovour = True, value = 'b')
     eraser_butt = Button(175,25, 50, 50, img = eraser, hovourImg = eraser_hov, hovour = True, value = 'e')
     butt_col_pick = Button(840, 25, 50, 50, value = 'p', img = col_pick_pic)
@@ -449,11 +514,12 @@ def mainLoop():
     butt_canvas_menu = Button(775, 30, 40, 40, canvas.screencol, enabled_selected = False)
     butt_size = Button(450, 25, 100, 50, enabled_selected = False, outline = False, isSize = True)
     butt_slider = Button(575, 25, 100, 50, img = slider, enabled_selected = False)
+    butt_shapes = Button(990, 25, 50, 50, img = shapes_surf)
 
     button_list_col = [white_butt, black_butt, red_butt, orange_butt, yellow_butt,
                             green_butt, skyblue_butt, blue_butt]
     button_list_mode = [brush_butt, eraser_butt, butt_col_pick, butt_fill]
-    button_list_misc = [butt_new, butt_undo_redo, butt_canvas_menu, butt_size, butt_slider]
+    button_list_misc = [butt_new, butt_undo_redo, butt_canvas_menu, butt_size, butt_slider, butt_shapes]
 
     brush_butt.selected = True
     black_butt.selected = True
@@ -468,12 +534,34 @@ def mainLoop():
                     pg.quit()
                     return
 
-        if pg.mouse.get_pos()[0] > canvas.pos[0] and pg.mouse.get_pos()[1] > canvas.pos[1]:
+        mpos = pg.mouse.get_pos()
+
+        if mpos[0] > canvas.pos[0] and mpos[1] > canvas.pos[1]:
             if pg.mouse.get_pressed()[0]:
                 if canvas.mode == 'p':
                     brush_butt.selected = True
                 canvas.draw(screen)
             else:
+                if canvas.pressed == True:
+                    pos = (mpos[0], mpos[1] - 100)
+                    if canvas.mode == 'l':
+                        pg.draw.line(canvas.current_surf, canvas.brushcol, canvas.prev_pos, pos, canvas.thick)
+                    elif canvas.mode == 'r':
+                        wd_ht = (pos[0] - canvas.prev_pos[0], pos[1]- canvas.prev_pos[1])
+                        if wd_ht[0] > canvas.thick and wd_ht[1] > canvas.thick:
+                            thickness = canvas.thick
+                        else:
+                            thickness = 0
+                        drawing_rect = pg.Rect(canvas.prev_pos, wd_ht)
+                        pg.draw.rect(canvas.current_surf, canvas.brushcol, drawing_rect, thickness)
+                    elif canvas.mode == 'c':
+                        circ_center = ((pos[0] + canvas.prev_pos[0])//2, (pos[1] + canvas.prev_pos[1])//2)
+                        r = int(((pos[0] - circ_center[0])**2 + (pos[1]- circ_center[1])**2)**0.5)
+                        if canvas.thick > r:
+                            thickness = 0
+                        else:
+                            thickness = canvas.thick
+                        pg.draw.circle(canvas.current_surf, canvas.brushcol, circ_center, r, thickness)
                 canvas.pressed = False
             pg.mouse.set_visible(False)
         else:
@@ -484,22 +572,26 @@ def mainLoop():
 
         canvas.show(screen)
 
-        pos = pg.mouse.get_pos()
         if canvas.mode == 'e':
-            rect = pg.Rect(pos, (canvas.e_thick, canvas.e_thick))
-            rect.center = pos
+            rect = pg.Rect(mpos, (canvas.e_thick, canvas.e_thick))
+            rect.center = mpos
             pg.draw.rect(screen, black, rect, 1)
         elif canvas.mode == 'f':
-            pg.draw.circle(screen, black, pg.mouse.get_pos(), 2)
+            pg.draw.circle(screen, black, mpos, 2)
         elif canvas.mode == 'p':
-            pg.draw.circle(screen, screen.get_at(pg.mouse.get_pos()), pg.mouse.get_pos(), 3)
-            pg.draw.circle(screen, black, pg.mouse.get_pos(), 3, 1)
+            pg.draw.circle(screen, screen.get_at(mpos), mpos, 10)
+            pg.draw.circle(screen, black, mpos, 10, 1)
         else:
-            pg.draw.circle(screen, canvas.brushcol, pg.mouse.get_pos(), canvas.thick//2)
+            pg.draw.circle(screen, canvas.brushcol, mpos, canvas.thick//2)
 
         toolbar(screen, button_list_col, button_list_mode, button_list_misc, canvas)
 
         pg.display.update()
         clock.tick(FPS)
 
-mainLoop()
+try:
+    mainLoop()
+except:
+    traceback.print_exc()
+finally:
+    pg.quit()
