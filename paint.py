@@ -91,16 +91,17 @@ class Canvas():
         self.thick = thickness
         self.e_thick = e_thickness
         self.mode = 'b'								 # b for brush, e - eraser, l - line, r - rectangle, c - circel, f - fill and p - colour picker
-        self.surf = pg.Surface((screenWd - pos[0], screenHt - pos[1])).convert_alpha()                    #(screenWd - pos[0]
+        self.surf = pg.Surface((screenWd - pos[0], screenHt - pos[1]))                 #(screenWd - pos[0]
         self.pos = pos
 ##        self.pos1 = (370, 100)
 ##        self.pos2 = (740, 100)
         self.prev_pos = (0,0)
         self.pressed = False
-        self.surf2 = pg.Surface((560, screenHt - pos[1])).convert_alpha()
+        self.surf2 = pg.Surface((560, screenHt - pos[1]))
         self.surf_swap = 0
         self.current_surf = self.surf
         self.undo_redo_button = butt_undo_redo
+        self.prev_screencol = screencol
     def fill(self, pos, screen):
         pos = tuple(pos)
         screencol = screen.get_at(pos)
@@ -173,7 +174,13 @@ class Canvas():
         screen.blit(self.current_surf, self.pos)
     def new(self, screen):
         self.surf.fill(self.screencol)
+        self.surf_swap = 0
         self.mode = 'b'
+    def new_col(self, screen):
+        temp_surf = self.current_surf.copy()
+        temp_surf.set_colorkey(self.prev_screencol)
+        self.new(screen)
+        self.surf.blit(temp_surf, (0,0))
 
 class Text():
     def __init__(self, x, y,  size, surfsize, text = '', colour = pg.Color("BLACK")):
@@ -309,8 +316,9 @@ def colchoice(screen, canvas, canvas_col_button):
                     return
         for button in templist:
             if button.get_click():
+                canvas.prev_screencol = canvas.screencol
                 canvas.screencol = button.colour
-                canvas.new(screen)
+                canvas.new_col(screen)
                 canvas_col_button.colour = button.colour
                 return
             button.show(surf)
@@ -319,9 +327,9 @@ def colchoice(screen, canvas, canvas_col_button):
         if rgb.get_click():
             rgb_val = rgb_col(screen, canvas, rgb_val, (662, 375))
             if rgb_val != None:
-                
+                canvas.prev_screencol = canvas.screencol
                 canvas.screencol = pg.Color(rgb_val[0], rgb_val[1], rgb_val[2])
-                canvas.new(screen)
+                canvas.new_col(screen)
                 canvas_col_button.colour = canvas.screencol
         rgb.show(surf)
         screen.blit(surf, (745, 105))
