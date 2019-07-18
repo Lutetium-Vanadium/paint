@@ -91,17 +91,19 @@ class Canvas():
         self.thick = thickness
         self.e_thick = e_thickness
         self.mode = 'b'								 # b for brush, e - eraser, l - line, r - rectangle, c - circel, f - fill and p - colour picker
-        self.surf = pg.Surface((screenWd - pos[0], screenHt - pos[1]))                 #(screenWd - pos[0]
+        self.size = (screenWd - pos[0], screenHt - pos[1])
+        self.surf = pg.Surface(self.size)
         self.pos = pos
 ##        self.pos1 = (370, 100)
 ##        self.pos2 = (740, 100)
         self.prev_pos = (0,0)
         self.pressed = False
-        self.surf2 = pg.Surface((560, screenHt - pos[1]))
+        self.surf2 = pg.Surface(self.size)
         self.surf_swap = 0
         self.current_surf = self.surf
         self.undo_redo_button = butt_undo_redo
         self.prev_screencol = screencol
+        self.tempSurf = None
     def fill(self, pos, screen):
         pos = tuple(pos)
         screencol = screen.get_at(pos)
@@ -152,6 +154,27 @@ class Canvas():
             return
         elif self.mode == 'l' or self.mode == 'c' or self.mode == 'r':
             self.pressed = True
+            self.tempSurf = pg.Surface(self.size)
+            self.tempSurf.fill(self.screencol)
+            self.tempSurf.set_colorkey(self.screencol)
+            if self.mode == 'l':
+                pg.draw.line(self.tempSurf, self.brushcol, self.prev_pos, pos, self.thick)
+            elif self.mode == 'c':
+                circ_center = ((pos[0] + self.prev_pos[0])//2, (pos[1] + self.prev_pos[1])//2)
+                r = int(((pos[0] - circ_center[0])**2 + (pos[1]- circ_center[1])**2)**0.5)
+                if self.thick > r:
+                    thickness = 0
+                else:
+                    thickness = self.thick
+                pg.draw.circle(self.tempSurf, self.brushcol, circ_center, r, thickness)
+            elif self.mode == 'r':
+                wd_ht = (pos[0] - self.prev_pos[0], pos[1]- self.prev_pos[1])
+                if wd_ht[0] > self.thick and wd_ht[1] > self.thick:
+                    thickness = self.thick
+                else:
+                    thickness = 0
+                drawing_rect = pg.Rect(self.prev_pos, wd_ht)
+                pg.draw.rect(self.tempSurf, self.brushcol, drawing_rect, thickness)
             return
         else:
             col = self.screencol
@@ -163,6 +186,7 @@ class Canvas():
         pg.draw.line(self.current_surf, col, self.prev_pos, pos, thick)
         self.prev_pos = pos
         self.pressed = True
+        self.tempSurf = None
     def show(self, screen):
         self.surf_swap %= 2
         if self.surf_swap == 0:
@@ -172,6 +196,8 @@ class Canvas():
             self.current_surf = self.surf2
             self.undo_redo_button.text = '--->'
         screen.blit(self.current_surf, self.pos)
+        if self.tempSurf != None:
+            screen.blit(self.tempSurf, self.pos)
     def new(self, screen):
         self.surf.fill(self.screencol)
         self.surf_swap = 0
@@ -479,6 +505,7 @@ def toolbar(screen, button_list_col, button_list_mode, button_list_misc, canvas,
         pg.time.wait(200)
 
 def mainLoop():
+    pg.display.set_caption('Paint')
     screenWd, screenHt = (1120, 630)
     screen = pg.display.set_mode((screenWd, screenHt))
     FPS = 60
