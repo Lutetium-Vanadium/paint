@@ -198,14 +198,17 @@ class Canvas():
         screen.blit(self.current_surf, self.pos)
         if self.tempSurf != None:
             screen.blit(self.tempSurf, self.pos)
-    def new(self, screen):
+    def new(self, screen, mode_change = True):
         self.surf.fill(self.screencol)
+        if self.tempSurf != None:
+            self.tempSurf.fill(self.screencol)
         self.surf_swap = 0
-        self.mode = 'b'
+        if mode_change:
+            self.mode = 'b'
     def new_col(self, screen):
         temp_surf = self.current_surf.copy()
         temp_surf.set_colorkey(self.prev_screencol)
-        self.new(screen)
+        self.new(screen, False)
         self.surf.blit(temp_surf, (0,0))
 
 class Text():
@@ -405,6 +408,8 @@ def shape_choice(screen, canvas, surfpos = (975, 105)):
             if button.get_click():
                 canvas.mode = button.value
                 return
+            if canvas.mode == button.value:
+                button.selected = True
             button.show(surf)
 
         if pg.mouse.get_pressed()[0] and surfRect.collidepoint(pg.mouse.get_pos()) == False and count > 20:
@@ -579,6 +584,8 @@ def mainLoop():
             else:
                 if canvas.pressed == True:
                     pos = (mpos[0], mpos[1] - 100)
+                    if canvas.tempSurf != None:
+                        canvas.tempSurf.fill(canvas.screencol)
                     if canvas.mode == 'l':
                         pg.draw.line(canvas.current_surf, canvas.brushcol, canvas.prev_pos, pos, canvas.thick)
                     elif canvas.mode == 'r':
